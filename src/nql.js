@@ -89,16 +89,10 @@ yargs(process.argv.slice(2))
         description: 'Process Sphinx-Needs data using the given input filter.',
         default: true
     })
-    .option('needs-extra-links', {
-        alias: 'nel',
+    .option('needs-extras', {
+        alias: 'ne',
         type: 'string',
-        description: 'JSON file that contains needs_extra_links',
-        default: null
-    })
-    .option('needs-extra-options', {
-        alias: 'neo',
-        type: 'string',
-        description: 'JSON file that contains needs_extra_links',
+        description: 'JSON file that contains needs_extra_links and/or needs_extra_options',
         default: null
     })
     .positional('filter', {
@@ -140,30 +134,30 @@ function readFileJsonFile(filename) {
 }
 
 let needs;
-let needs_extra_options=null;
+let needs_extras=null;
 let needs_extra_links=null;
+let needs_extra_options=null;
 
-if(argv.neo) {
-    needs_extra_options=readFileJsonFile(argv.neo);
+if(argv.ne) {
+    needs_extras=readFileJsonFile(argv.ne);
+    if(needs_extras) {
+        needs_extra_links='needs_extra_links' in needs_extras ?  needs_extras.needs_extra_links.map(link => link.option):null;
+        needs_extra_options='needs_extra_options' in needs_extras ? needs_extras.needs_extra_options:null;
+    }
 //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
-}
-
-if(argv.nel) {
-    needs_extra_links=readFileJsonFile(argv.nel);
-//  console.error(read_needs.prettyJ(needs_extra_links['needs_extra_links']));
 }
 
 needs=readFileJsonFile(filename);
 if(needs) {
     network_init_data = read_needs.processJSON(needs,
         argv.verbose,
-        _link_types=needs_extra_links.needs_extra_links.map(link => link.option),
-        _extra_options=needs_extra_options['needs_extra_options']
+        _link_types=needs_extra_links,
+        _extra_options=needs_extra_options
     );
     if (argv.a && network_init_data['nodes'].length > 0) {
-        Object.entries(network_init_data['nodes'][0].data).forEach(([k, v]) => {
-            console.log(`${k.padEnd(15, ' ')} -> ${truncateString(v, 60)}`);
-        })
+        const data=network_init_data['nodes'][0].data;
+        for(const k of Object.keys(data).sort())
+            console.log(`${k.padEnd(15, ' ')} -> ${truncateString(data[k], 60)}`);
     }
     else
         main(network_init_data, filterExpression, executeFilter=argv.x, verbose=argv.verbose, traceParser=argv.trace, mpf=argv.mpf);
