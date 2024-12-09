@@ -1,0 +1,28 @@
+{
+  "name": "nql",
+  "version": "1.0.0",
+  "description": "sphinx_Needs Query Language",
+  "main": "index.js",
+  "scripts": {
+    "test": "testx"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mi-parkes/nql.git"
+  },
+  "keywords": [
+    "sphinx_needs",
+    "sphinx-needs-data-explorer"
+  ],
+  "author": "MP",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mi-parkes/nql/issues"
+  },
+  "homepage": "https://github.com/mi-parkes/nql#readme",
+  "dependencies": {
+    "ollama": "^0.5.11",
+    "pegjs": "^0.10.0",
+    "yargs": "^17.7.2"
+  }
+}
