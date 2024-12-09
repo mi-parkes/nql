@@ -89,6 +89,18 @@ yargs(process.argv.slice(2))
         description: 'Process Sphinx-Needs data using the given input filter.',
         default: true
     })
+    .option('needs-extra-links', {
+        alias: 'nel',
+        type: 'string',
+        description: 'JSON file that contains needs_extra_links',
+        default: null
+    })
+    .option('needs-extra-options', {
+        alias: 'neo',
+        type: 'string',
+        description: 'JSON file that contains needs_extra_links',
+        default: null
+    })
     .positional('filter', {
         describe: 'Input Sphinx-Needs data filter (required)',
         type: 'string',
@@ -114,9 +126,40 @@ argv = yargs.parse();
 const filterExpression = argv._[0];
 const filename = argv._[1];
 
-fs.readFile(filename, 'utf8', function (err, data) {
-    if (err) throw err;
-    network_init_data = read_needs.processJSON(JSON.parse(data), argv.verbose);
+function readFileJsonFile(filename) {
+    let jsonData=null;
+    try  {
+        let data=fs.readFileSync(filename, 'utf8');
+        jsonData = JSON.parse(data);
+    }
+    catch (error) {
+        console.error(`Failed to read file: ${filename} -> ${error}`);
+        throw error;
+    }
+    return jsonData;
+}
+
+let needs;
+let needs_extra_options=null;
+let needs_extra_links=null;
+
+if(argv.neo) {
+    needs_extra_options=readFileJsonFile(argv.neo);
+//  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
+}
+
+if(argv.nel) {
+    needs_extra_links=readFileJsonFile(argv.nel);
+//  console.error(read_needs.prettyJ(needs_extra_links['needs_extra_links']));
+}
+
+needs=readFileJsonFile(filename);
+if(needs) {
+    network_init_data = read_needs.processJSON(needs,
+        argv.verbose,
+        _link_types=needs_extra_links.needs_extra_links.map(link => link.option),
+        _extra_options=needs_extra_options['needs_extra_options']
+    );
     if (argv.a && network_init_data['nodes'].length > 0) {
         Object.entries(network_init_data['nodes'][0].data).forEach(([k, v]) => {
             console.log(`${k.padEnd(15, ' ')} -> ${truncateString(v, 60)}`);
@@ -124,4 +167,4 @@ fs.readFile(filename, 'utf8', function (err, data) {
     }
     else
         main(network_init_data, filterExpression, executeFilter=argv.x, verbose=argv.verbose, traceParser=argv.trace, mpf=argv.mpf);
-});
+}

@@ -282,8 +282,6 @@ function prepareParser(traceParser) {
       return "!";
   }
 
-  // r1  = compare_expr / reg_exp_expr / inside_expr / grouped_expr
-
   r1 = neg_expr
 
   neg_expr
@@ -320,16 +318,8 @@ function prepareParser(traceParser) {
 
   compare_expr
       = lhs:atom  oper:compare_oper rhs:atom  {
-      //console.log("lsh="+lhs.source);
-      //console.log(JSON.stringify(lhs,null,2));
-      //console.log(JSON.stringify(rhs,null,2));
-      //if(typeof oper !== 'undefined') {
-          //console.log("OKOK");
       validate_types(lhs,rhs);
       return { left:lhs, right: rhs, operator: oper };
-      // }
-      // else
-      //     return lhs;
   }
 
   inside_expr
@@ -477,20 +467,7 @@ function custom_filter(currentNode,expr) {
     return Node.create(expr).evaluate(currentNode);
 }
 
-///////
-
-type2color = {
-    'func': '#D4E6F1',
-    'uc':   '#D4E6F1',
-    'req':  '#DEFFDC',
-    'dia':  '#D4E6F1',
-    'spec': '#FFFF99',
-    'need': '#9856a5',
-    'test': '#87CEFA',
-    'impl': '#ffcccc',
-};
-
-const link_types = ['links', 'refines', 'triggers', 'associated', 'composed', 'implements', 'specifies', 'satisfies', 'validation', 'verifies', 'motivation', 'requires'];
+let link_types = ['links'];
 
 function parse_links(need) {
     links = [];
@@ -511,7 +488,9 @@ function convert_text_to_html(text) {
     return html_text;
 }
 
-function processJSON(data,_verbose=false) {
+function processJSON(data,_verbose=false,_link_types=null,_extra_options=null) {
+    if(_link_types)
+        link_types=_link_types;
     verbose=_verbose;
     const needs = data['versions']['1.0']['needs']
     let nodes = [];
@@ -535,13 +514,14 @@ function processJSON(data,_verbose=false) {
                 'description':needs[key]['description']
             }
         };
+        if(_extra_options) {
+            for(const e of _extra_options) {
+                if(e in needs[key])
+                    jsonData['data'][e]=needs[key][e]
+            }
+        }
         jsonData['shape'] = 'box'
         jsonData['id'] = needs[key].id
-        if (needs[key].type in type2color) {
-            jsonData['color'] = type2color[needs[key].type];
-        } else {
-            jsonData['color'] = 'white'
-        }
         needs[key]['index']=nodes.length;
         nodes.push(jsonData);
     }
@@ -560,6 +540,7 @@ function processJSON(data,_verbose=false) {
         for(const link_type of link_types) {
             const linktype_back=`${link_type}_back`
             if(link_type in needs[key]) {
+                nodes[index]['data'][link_type]=needs[key][link_type];
                 for(to of needs[key][link_type]) {
                     if(to in needs) {
                         children[to].push(key);
@@ -613,16 +594,3 @@ function prettyJ(unordered) {
       }
     );
   }
-
-// https://stackoverflow.com/questions/4810841/pretty-print-json-using-javascript
-class Nodex {
-    constructor(node) {
-        this.node=node;
-    }
-    print() {
-        console.log(prettyJ(this.node,null,2));
-    }
-    static create(obj) {
-        return new Nodex(obj);
-    }
-};
