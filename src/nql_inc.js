@@ -434,7 +434,7 @@ function prepareParser(traceParser) {
     } / "" { return []; }
   
   string
-    = _ "'" s:$(char+) "'" { return s }
+    = _ "'" s:$(char*) "'" { return s }
 
   string_literal = s:string {
       //console.log('string_literal='+s)
@@ -490,7 +490,7 @@ function convert_text_to_html(text) {
 
 function processJSON(data,_verbose=false,_link_types=null,_extra_options=null) {
     if(_link_types)
-        link_types=_link_types;
+        link_types=['links', ..._link_types];
     verbose=_verbose;
     const needs = data['versions']['1.0']['needs']
     let nodes = [];
