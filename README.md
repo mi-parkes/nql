@@ -60,8 +60,6 @@ npm install
 
 ## Query Language Syntax:
 
-> **NOTE:** Parentheses should be used to group terms in filter expressions.
-
 * **Operators:**
   * **Comparison Operators:**
     * `!=`: Not equal to
@@ -106,19 +104,20 @@ npm install
        ```
      *  **Filtering by Array or Dynamic Attributes:**
         ```
-        type=='ftr' && (incoming ~ /^req/)
+        tags ~ /manual/i
         ```
-
+        ```
+        type=='ftr' && incoming ~ /^req/
+        ```
      *  **Filtering by Array or Dynamic Attributes with Union and Subtraction:**
         ```
         incoming-links ~ /^req/i
         ```
-
         ```
         satisfies+links ~ /^req/
         ```
 
    * **Set Operations:**
        ```
-       tags in ["bug", "feature"]
+       ['workbench','RUN'] in tags
        ```
