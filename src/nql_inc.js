@@ -488,11 +488,21 @@ function convert_text_to_html(text) {
     return html_text;
 }
 
-function processJSON(data,_verbose=false,_link_types=null,_extra_options=null) {
+function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_version=null) {
     if(_link_types)
         link_types=['links', ..._link_types];
     verbose=_verbose;
-    const needs = data['versions']['1.0']['needs']
+    let version=_version;
+    if(version) {
+        if(!(version in data['versions']))
+            return null;
+    } else {
+        if (Object.keys(data.versions).length > 0)
+            version = Object.keys(data.versions)[0];
+        else
+            return null;
+    }
+    needs = data['versions'][version]['needs']
     let nodes = [];
     let edges = [];
     let children={};
@@ -556,10 +566,12 @@ function processJSON(data,_verbose=false,_link_types=null,_extra_options=null) {
         gnodes[key]=nodes[index];
     }
 
-    return { 
-        'gnodes': gnodes,
-        'nodes': nodes,
-        'edges': edges,
+    return {
+        data:data,
+        version:version,
+        gnodes: gnodes,
+        nodes: nodes,
+        edges: edges,
         children:children,
         parents:parents }
     ;

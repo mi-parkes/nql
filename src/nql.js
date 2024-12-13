@@ -23,7 +23,11 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
                         break;
                 }
             }
-            console.log(JSON.stringify({ counter: counter, needs: out }));
+            const data=network_init_data['data']['versions'][network_init_data['version']];
+            data['needs']=out;
+            data['needs_amount']=counter;
+            //console.log(JSON.stringify({ counter: counter, needs: out }));
+            console.log(JSON.stringify(network_init_data['data']));
         }
     } catch (error) {
         console.log(`${coloredText(filterExpression, 'red')} -> ${error}`);
@@ -137,12 +141,14 @@ let needs;
 let needs_extras=null;
 let needs_extra_links=null;
 let needs_extra_options=null;
+let needs_extra_version=null;
 
 if(argv.ne) {
     needs_extras=readFileJsonFile(argv.ne);
     if(needs_extras) {
         needs_extra_links='needs_extra_links' in needs_extras ?  needs_extras.needs_extra_links.map(link => link.option):null;
         needs_extra_options='needs_extra_options' in needs_extras ? needs_extras.needs_extra_options:null;
+        needs_extra_version='version' in needs_extras ? needs_extras.version:null;
     }
 //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
 }
@@ -152,7 +158,8 @@ if(needs) {
     network_init_data = read_needs.processJSON(needs,
         argv.verbose,
         _link_types=needs_extra_links,
-        _extra_options=needs_extra_options
+        _extra_options=needs_extra_options,
+        _version=needs_extra_version
     );
     if (argv.a && network_init_data['nodes'].length > 0) {
         const data=network_init_data['nodes'][0].data;
