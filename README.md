@@ -91,7 +91,7 @@ npm install
     * `incoming`:  A dynamic attribute that lists all the needs that link to the current need.
     * `outgoing`: A dynamic attribute that lists all the needs that the current need links to.
 
-## Advanced Query Examples:
+## Query Examples:
 
    * **Filtering by Multiple Criteria:**
        ```

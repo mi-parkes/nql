@@ -521,7 +521,9 @@ function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_v
                 'status': needs[key]['status'],
                 'id': needs[key]['id'],
                 'links': needs[key]['links'],
-                'description':needs[key]['description']
+                'description':needs[key]['description'],
+                "lineno":'lineno' in needs[key]?needs[key]['lineno']:1,
+                "tags":needs[key]['tags']
             }
         };
         if(_extra_options) {
