@@ -1,4 +1,5 @@
 const peg = require("pegjs");
+//import performance;
 
 let verbose = false;
 
@@ -10,6 +11,14 @@ class Timer {
         const endTime = performance.now();
         console.error(`Execution time of ${msg} ${((endTime - this.startTime) / 1000).toFixed(3)} ms`);
     }
+}
+
+// { totalJSHeapSize: number, usedJSHeapSize: number, jsHeapSizeLimit: number }
+
+function memoryConsumption(msg) {
+    // const memoryUsage = performance.memory;
+    const memoryUsage = process.memoryUsage();
+    console.error(`Memory consumption of ${msg} ${Math.round((memoryUsage.heapUsed/ 1024 / 1024) * 100) / 100} MB`); 
 }
 
 function getType(att) {
@@ -479,7 +488,9 @@ class NeedsParser {
         return html_text;
     }
 
-    processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null) {
+    processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null,
+        _keep_input_data=true
+    ) {
         if (_link_types)
             this.link_types = ['links', ..._link_types];
         verbose = _verbose;
@@ -560,7 +571,7 @@ class NeedsParser {
         }
 
         return {
-            data: data,
+            data: _keep_input_data?data:null,
             version: version,
             gnodes: gnodes,
             nodes: nodes,
@@ -604,6 +615,7 @@ function prettyJ(unordered) {
 
 module.exports = {
     Timer,
+    memoryConsumption,
     NeedsParser,
     prepareParser,
     parse_input,

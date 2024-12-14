@@ -95,7 +95,7 @@ yargs(process.argv.slice(2))
     .option('diagnostics', {
         alias: 'dia',
         type: 'boolean',
-        description: 'Measure and log execution time',
+        description: 'Performance Profiling',
         default: true
     })
     .option('needs-extras', {
@@ -142,7 +142,6 @@ function readFileJsonFile(filename) {
     return jsonData;
 }
 
-let needs;
 let needs_extras = null;
 let needs_extra_links = null;
 let needs_extra_options = null;
@@ -158,15 +157,20 @@ if (argv.ne) {
     //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
 }
 
-needs = readFileJsonFile(filename);
+if(argv.dia)
+    read_needs.memoryConsumption('Before execution of readFileJsonFile():');
+
+let needs = readFileJsonFile(filename);
 if (needs) {
     const np = new read_needs.NeedsParser();
     network_init_data = np.processJSON(needs,
         argv.verbose,
         _link_types = needs_extra_links,
         _extra_options = needs_extra_options,
-        _version = needs_extra_version
+        _version = needs_extra_version,
+        _keep_input_data=true
     );
+    needs=null;
     if (argv.a && network_init_data['nodes'].length > 0) {
         const data = network_init_data['nodes'][0].data;
         for (const k of Object.keys(data).sort())
@@ -174,15 +178,19 @@ if (needs) {
     }
     else {
         const timer = argv.dia ? new read_needs.Timer() : null;
-        if (timer)
+        if (timer) {
             timer.start();
+            read_needs.memoryConsumption('Before execution of main():');
+        }
         main(network_init_data,
             filterExpression,
             executeFilter = argv.x,
             verbose = argv.verbose,
             traceParser = argv.trace,
             mpf = argv.mpf);
-        if (timer)
+        if (timer) {
             timer.stop('main()');
+            read_needs.memoryConsumption('After execution of main():');
+        }
     }
 }
