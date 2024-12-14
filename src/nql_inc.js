@@ -1,24 +1,15 @@
 const peg = require("pegjs");
 
-module.exports = { 
-    startTimer,
-    stopTimer,
-    prepareParser,
-    parse_input,
-    custom_filter,
-    processJSON,
-    prettyJ
-};
+let verbose = false;
 
-let verbose=false;
-
-function startTimer() {
-    startTime = performance.now();
-}
-
-function stopTimer(msg) {
-    const endTime = performance.now();
-    console.log(`Execution time of ${msg}`,endTime - startTime);
+class Timer {
+    start() {
+        this.startTime = performance.now();
+    }
+    stop(msg) {
+        const endTime = performance.now();
+        console.error(`Execution time of ${msg} ${((endTime - this.startTime)/1000).toFixed(3)} ms`);
+    }
 }
 
 function getType(att) {
@@ -63,171 +54,171 @@ function filterOutKeys(obj, keysToRemove) {
 }
 
 class Node {
-  constructor(left, right, operator) {
-      this.left = left;
-      this.right = right;
-      this.operator = operator
-  };
-  static class(obj) {
-      return new Node(obj.left, obj.right, obj.operator);
-  }
-  get(node) {
-      return Node.create(node).expand();
-  }
-  getValue(node) {
-      if (verbose)
-          console.log('expand():', this);
-      if ('type' in node) {
-          if (node['type'] == 'array')
-              return node.value;
-          else
-              return node.value;
-      } else
-          return this.get(node)
-  }
-  expand() {
-      let lhs = 'type' in this.left ?
-          this.getValue(this.left) : this.get(this.left);
-      let rhs = 'type' in this.right ?
-          this.getValue(this.right) : this.get(this.right);
-      return `${lhs} ${this.operator} ${rhs} `
-  }
-  print() {
-      console.log(this.expand());
-  }
-  cast(node) {
-      return Node.create(node);
-  }
-  isObject(node) { return !('type' in node); }
-  evaluate(currentNode) {
-      var ret = false;
-      switch (this.operator) {
-          case "!": {
-              ret = !this.cast(this.left).evaluate(currentNode);
-              break;
-          }
-          case "||": {
-              ret = (
-                  (this.isObject(this.left) ? this.cast(this.left).evaluate(currentNode) : this.left['value']) ||
-                  (this.isObject(this.right) ? this.cast(this.right).evaluate(currentNode) : this.right['value'])
-              )
-              break;
-          }
-          case "&&": {
-              ret = (
-                  (this.isObject(this.left) ? this.cast(this.left).evaluate(currentNode) : this.left['value']) &&
-                  (this.isObject(this.right) ? this.cast(this.right).evaluate(currentNode) : this.right['value'])
-              )
-              break;
-          }
-          case "!=": {
-              const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
-              const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
-              const lhs_type = typeof this.left.value;
-              if (this.left.type === 'array' && lhs_type !== 'string') {
-                  if (verbose)
-                      for (const elm of this.left.value) {
-                          console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
-                      };
-                  const newList = mergeUniqueLists(this.left.value, currentNode['data']);
-                  ret = !arraysEqual(newList, rhs);
-                  break
-              }
-              if (this.left.type === 'array')
-                  ret = !arraysEqual(lhs, rhs);
-              else
-                  ret = lhs !== rhs;
-              break;
-          }
-          case "==": {
-              const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
-              const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
-              const lhs_type = typeof this.left.value;
-              if (this.left.type === 'array' && lhs_type !== 'string') {
-                  if (verbose)
-                      for (const elm of this.left.value) {
-                          console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
-                      };
-                  const newList = mergeUniqueLists(this.left.value, currentNode['data']);
-                  ret = arraysEqual(newList, rhs);
-                  break
-              }
-              if (this.left.type === 'array')
-                  ret = arraysEqual(lhs, rhs);
-              else
-                  ret = lhs === rhs;
-              break;
-          }
-          case "in": {
-              const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
-              const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
-              if (this.left.type === 'string')
-                  ret = rhs.includes(lhs);
-              else
-                  ret = isArrayInArray(lhs, rhs);
-              break;
-          }
-          case "~":
-          case "~i":
-              {
-                  const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
-                  const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
-                  let re = new RegExp(rhs, this.operator == "~i" ? "i" : "");
-                  if(this.left.type==='string')
-                      ret = lhs.match(re);
-                  else {
-                      const lhs_type = typeof this.left.value;
-                      if (this.left.type === 'array' && lhs_type !== 'string') {
-                          if (verbose)
-                              for (const elm of this.left.value) {
-                                  console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
-                              };
-                              const newList = mergeUniqueLists(this.left.value, currentNode['data']);
-                              for(const e of newList) {
-                                  ret = e.match(re);
-                                  if(ret)
-                                      break;
-                              }
-                          }
-                      else
-                      for(const e of lhs) {
-                          ret = e.match(re);
-                          if(ret)
-                              break;
-                      }
-                  }
-                  break;
-              }
-      }
-      return ret;
-  }
+    constructor(left, right, operator) {
+        this.left = left;
+        this.right = right;
+        this.operator = operator
+    };
+    static class(obj) {
+        return new Node(obj.left, obj.right, obj.operator);
+    }
+    get(node) {
+        return Node.create(node).expand();
+    }
+    getValue(node) {
+        if (verbose)
+            console.log('expand():', this);
+        if ('type' in node) {
+            if (node['type'] == 'array')
+                return node.value;
+            else
+                return node.value;
+        } else
+            return this.get(node)
+    }
+    expand() {
+        let lhs = 'type' in this.left ?
+            this.getValue(this.left) : this.get(this.left);
+        let rhs = 'type' in this.right ?
+            this.getValue(this.right) : this.get(this.right);
+        return `${lhs} ${this.operator} ${rhs} `
+    }
+    print() {
+        console.log(this.expand());
+    }
+    cast(node) {
+        return Node.create(node);
+    }
+    isObject(node) { return !('type' in node); }
+    evaluate(currentNode) {
+        var ret = false;
+        switch (this.operator) {
+            case "!": {
+                ret = !this.cast(this.left).evaluate(currentNode);
+                break;
+            }
+            case "||": {
+                ret = (
+                    (this.isObject(this.left) ? this.cast(this.left).evaluate(currentNode) : this.left['value']) ||
+                    (this.isObject(this.right) ? this.cast(this.right).evaluate(currentNode) : this.right['value'])
+                )
+                break;
+            }
+            case "&&": {
+                ret = (
+                    (this.isObject(this.left) ? this.cast(this.left).evaluate(currentNode) : this.left['value']) &&
+                    (this.isObject(this.right) ? this.cast(this.right).evaluate(currentNode) : this.right['value'])
+                )
+                break;
+            }
+            case "!=": {
+                const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
+                const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
+                const lhs_type = typeof this.left.value;
+                if (this.left.type === 'array' && lhs_type !== 'string') {
+                    if (verbose)
+                        for (const elm of this.left.value) {
+                            console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
+                        };
+                    const newList = mergeUniqueLists(this.left.value, currentNode['data']);
+                    ret = !arraysEqual(newList, rhs);
+                    break
+                }
+                if (this.left.type === 'array')
+                    ret = !arraysEqual(lhs, rhs);
+                else
+                    ret = lhs !== rhs;
+                break;
+            }
+            case "==": {
+                const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
+                const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
+                const lhs_type = typeof this.left.value;
+                if (this.left.type === 'array' && lhs_type !== 'string') {
+                    if (verbose)
+                        for (const elm of this.left.value) {
+                            console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
+                        };
+                    const newList = mergeUniqueLists(this.left.value, currentNode['data']);
+                    ret = arraysEqual(newList, rhs);
+                    break
+                }
+                if (this.left.type === 'array')
+                    ret = arraysEqual(lhs, rhs);
+                else
+                    ret = lhs === rhs;
+                break;
+            }
+            case "in": {
+                const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
+                const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
+                if (this.left.type === 'string')
+                    ret = rhs.includes(lhs);
+                else
+                    ret = isArrayInArray(lhs, rhs);
+                break;
+            }
+            case "~":
+            case "~i":
+                {
+                    const lhs = (this.left.source === 'attr') ? currentNode['data'][this.left.value] : this.left.value;
+                    const rhs = (this.right.source === 'attr') ? currentNode['data'][this.right.value] : this.right.value;
+                    let re = new RegExp(rhs, this.operator == "~i" ? "i" : "");
+                    if (this.left.type === 'string')
+                        ret = lhs.match(re);
+                    else {
+                        const lhs_type = typeof this.left.value;
+                        if (this.left.type === 'array' && lhs_type !== 'string') {
+                            if (verbose)
+                                for (const elm of this.left.value) {
+                                    console.log(read_needs.prettyJ(filterOutKeys(elm, ['description']), null, 2));
+                                };
+                            const newList = mergeUniqueLists(this.left.value, currentNode['data']);
+                            for (const e of newList) {
+                                ret = e.match(re);
+                                if (ret)
+                                    break;
+                            }
+                        }
+                        else
+                            for (const e of lhs) {
+                                ret = e.match(re);
+                                if (ret)
+                                    break;
+                            }
+                    }
+                    break;
+                }
+        }
+        return ret;
+    }
 }
 
 Node.create = function (obj) {
-  var field = new Node();
-  for (var prop in obj) {
-      if (field.hasOwnProperty(prop)) {
-          field[prop] = obj[prop];
-      }
-  }
-  return field;
+    var field = new Node();
+    for (var prop in obj) {
+        if (field.hasOwnProperty(prop)) {
+            field[prop] = obj[prop];
+        }
+    }
+    return field;
 }
 
 function filterOutKeys(obj, keysToRemove) {
-  return Object.fromEntries(
-      Object.entries(obj).filter(([key]) => !keysToRemove.includes(key))
-  );
+    return Object.fromEntries(
+        Object.entries(obj).filter(([key]) => !keysToRemove.includes(key))
+    );
 }
 
 function convert_text_to_html(text) {
     //Escape special characters to prevent XSS attacks
     escaped_text = encodeURIComponent(text);
-    html_text = escaped_text.replace('\n','<br>');
+    html_text = escaped_text.replace('\n', '<br>');
     return html_text;
 }
 
 function prepareParser(traceParser) {
-  let grammar_code = `
+    let grammar_code = `
   {
       const { config } = options;
 
@@ -250,7 +241,7 @@ function prepareParser(traceParser) {
   }
   `;
 
-  let grammar = `
+    let grammar = `
 
   ${grammar_code}
 
@@ -448,14 +439,14 @@ function prepareParser(traceParser) {
   char
     = [A-Za-z0-9_]
   `;
-  parser=peg.generate(grammar,traceParser?{trace:true}:{});
-  return parser;
+    parser = peg.generate(grammar, traceParser ? { trace: true } : {});
+    return parser;
 }
 
-function parse_input(parser,config,input) {
+function parse_input(parser, config, input) {
     let AST;
     try {
-        AST = parser.parse(input,{config});
+        AST = parser.parse(input, { config });
     } catch (error) {
         console.error(`Failure parsing input: ${input} -> ${error}`);
         throw error;
@@ -463,7 +454,7 @@ function parse_input(parser,config,input) {
     return AST;
 }
 
-function custom_filter(currentNode,expr) {
+function custom_filter(currentNode, expr) {
     return Node.create(expr).evaluate(currentNode);
 }
 
@@ -488,13 +479,13 @@ function convert_text_to_html(text) {
     return html_text;
 }
 
-function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_version=null) {
-    if(_link_types)
-        link_types=['links', ..._link_types];
-    verbose=_verbose;
-    let version=_version;
-    if(version) {
-        if(!(version in data['versions']))
+function processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null) {
+    if (_link_types)
+        link_types = ['links', ..._link_types];
+    verbose = _verbose;
+    let version = _version;
+    if (version) {
+        if (!(version in data['versions']))
             return null;
     } else {
         if (Object.keys(data.versions).length > 0)
@@ -505,12 +496,12 @@ function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_v
     needs = data['versions'][version]['needs']
     let nodes = [];
     let edges = [];
-    let children={};
-    let parents={};
+    let children = {};
+    let parents = {};
     let gnodes = {};
     for (const key in needs) {
-        children[key]=[];
-        parents[key]=[];
+        children[key] = [];
+        parents[key] = [];
         if (verbose)
             console.log(key, needs[key].docname);
         var jsonData = {
@@ -521,20 +512,20 @@ function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_v
                 'status': needs[key]['status'],
                 'id': needs[key]['id'],
                 'links': needs[key]['links'],
-                'description':needs[key]['description'],
-                "lineno":'lineno' in needs[key]?needs[key]['lineno']:1,
-                "tags":needs[key]['tags']
+                'description': needs[key]['description'],
+                "lineno": 'lineno' in needs[key] ? needs[key]['lineno'] : 1,
+                "tags": needs[key]['tags']
             }
         };
-        if(_extra_options) {
-            for(const e of _extra_options) {
-                if(e in needs[key])
-                    jsonData['data'][e]=needs[key][e]
+        if (_extra_options) {
+            for (const e of _extra_options) {
+                if (e in needs[key])
+                    jsonData['data'][e] = needs[key][e]
             }
         }
         jsonData['shape'] = 'box'
         jsonData['id'] = needs[key].id
-        needs[key]['index']=nodes.length;
+        needs[key]['index'] = nodes.length;
         nodes.push(jsonData);
     }
     for (const key in needs) {
@@ -547,64 +538,74 @@ function processJSON(data,_verbose=false,_link_types=null,_extra_options=null,_v
     }
 
     // add children and parents
-    for(const key in needs) {
-        const index=needs[key]['index'];
-        for(const link_type of link_types) {
-            const linktype_back=`${link_type}_back`
-            if(link_type in needs[key]) {
-                nodes[index]['data'][link_type]=needs[key][link_type];
-                for(to of needs[key][link_type]) {
-                    if(to in needs) {
+    for (const key in needs) {
+        const index = needs[key]['index'];
+        for (const link_type of link_types) {
+            const linktype_back = `${link_type}_back`
+            if (link_type in needs[key]) {
+                nodes[index]['data'][link_type] = needs[key][link_type];
+                for (to of needs[key][link_type]) {
+                    if (to in needs) {
                         children[to].push(key);
                         parents[key].push(to);
                     }
                 }
             }
-            if(linktype_back in needs[key])
-                nodes[index]['data'][linktype_back]=needs[key][linktype_back];
+            if (linktype_back in needs[key])
+                nodes[index]['data'][linktype_back] = needs[key][linktype_back];
         }
-        nodes[index]['data']['incoming']=children[key];
-        nodes[index]['data']['outgoing']=parents[key];
-        gnodes[key]=nodes[index];
+        nodes[index]['data']['incoming'] = children[key];
+        nodes[index]['data']['outgoing'] = parents[key];
+        gnodes[key] = nodes[index];
     }
 
     return {
-        data:data,
-        version:version,
+        data: data,
+        version: version,
         gnodes: gnodes,
         nodes: nodes,
         edges: edges,
-        children:children,
-        parents:parents }
-    ;
+        children: children,
+        parents: parents
+    }
+        ;
 }
 
 function prettyJ(unordered) {
     let json = Object.keys(unordered).sort().reduce(
-        (obj, key) => { 
-          obj[key] = unordered[key]; 
-          return obj;
-        }, 
+        (obj, key) => {
+            obj[key] = unordered[key];
+            return obj;
+        },
         {}
-      );
-    if (typeof json !== 'string') {
-      json = JSON.stringify(json, undefined, 2);
-    }
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, 
-      function (match) {
-        let cls = "\x1b[36m";
-        if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-            cls = "\x1b[34m";
-          } else {
-            cls = "\x1b[32m";
-          }
-        } else if (/true|false/.test(match)) {
-          cls = "\x1b[35m"; 
-        } else if (/null/.test(match)) {
-          cls = "\x1b[31m";
-        }
-        return cls + match + "\x1b[0m";
-      }
     );
-  }
+    if (typeof json !== 'string') {
+        json = JSON.stringify(json, undefined, 2);
+    }
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        function (match) {
+            let cls = "\x1b[36m";
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = "\x1b[34m";
+                } else {
+                    cls = "\x1b[32m";
+                }
+            } else if (/true|false/.test(match)) {
+                cls = "\x1b[35m";
+            } else if (/null/.test(match)) {
+                cls = "\x1b[31m";
+            }
+            return cls + match + "\x1b[0m";
+        }
+    );
+}
+
+module.exports = {
+    Timer,
+    prepareParser,
+    parse_input,
+    custom_filter,
+    processJSON,
+    prettyJ
+};

@@ -93,6 +93,12 @@ yargs(process.argv.slice(2))
         description: 'Process Sphinx-Needs data using the given input filter.',
         default: true
     })
+    .option('diagnostics', {
+        alias: 'dia',
+        type: 'boolean',
+        description: 'Measure and log execution time',
+        default: true
+    })
     .option('needs-extras', {
         alias: 'ne',
         type: 'string',
@@ -166,6 +172,12 @@ if(needs) {
         for(const k of Object.keys(data).sort())
             console.log(`${k.padEnd(15, ' ')} -> ${truncateString(data[k], 60)}`);
     }
-    else
+    else {
+        const timer = argv.dia?new read_needs.Timer():null;
+        if(timer)
+            timer.start();
         main(network_init_data, filterExpression, executeFilter=argv.x, verbose=argv.verbose, traceParser=argv.trace, mpf=argv.mpf);
+        if(timer)
+            timer.stop('main()');
+    }
 }
