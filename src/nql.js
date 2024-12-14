@@ -11,7 +11,7 @@ function coloredText(text, color) {
 function processInput(parser, config, filterExpression, executeFilter, mpf) {
     let ret = 0;
     try {
-        let AST=read_needs.parse_input(parser,config,filterExpression);
+        let AST = read_needs.parse_input(parser, config, filterExpression);
         let counter = 0;
         if (executeFilter) {
             let out = {};
@@ -23,9 +23,9 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
                         break;
                 }
             }
-            const data=network_init_data['data']['versions'][network_init_data['version']];
-            data['needs']=out;
-            data['needs_amount']=counter;
+            const data = network_init_data['data']['versions'][network_init_data['version']];
+            data['needs'] = out;
+            data['needs_amount'] = counter;
             //console.log(JSON.stringify({ counter: counter, needs: out }));
             console.log(JSON.stringify(network_init_data['data']));
         }
@@ -36,7 +36,7 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
     return ret;
 }
 
-function main(network_init_data, filterExpression, executeFilter=true, verbose=false, traceParser=false, mpf=-1) {
+function main(network_init_data, filterExpression, executeFilter = true, verbose = false, traceParser = false, mpf = -1) {
     const parser = read_needs.prepareParser(traceParser);
     if (network_init_data && 'gnodes' in network_init_data) {
         const gnodes = network_init_data['gnodes'];
@@ -131,9 +131,9 @@ const filterExpression = argv._[0];
 const filename = argv._[1];
 
 function readFileJsonFile(filename) {
-    let jsonData=null;
-    try  {
-        let data=fs.readFileSync(filename, 'utf8');
+    let jsonData = null;
+    try {
+        let data = fs.readFileSync(filename, 'utf8');
         jsonData = JSON.parse(data);
     }
     catch (error) {
@@ -144,40 +144,41 @@ function readFileJsonFile(filename) {
 }
 
 let needs;
-let needs_extras=null;
-let needs_extra_links=null;
-let needs_extra_options=null;
-let needs_extra_version=null;
+let needs_extras = null;
+let needs_extra_links = null;
+let needs_extra_options = null;
+let needs_extra_version = null;
 
-if(argv.ne) {
-    needs_extras=readFileJsonFile(argv.ne);
-    if(needs_extras) {
-        needs_extra_links='needs_extra_links' in needs_extras ?  needs_extras.needs_extra_links.map(link => link.option):null;
-        needs_extra_options='needs_extra_options' in needs_extras ? needs_extras.needs_extra_options:null;
-        needs_extra_version='version' in needs_extras ? needs_extras.version:null;
+if (argv.ne) {
+    needs_extras = readFileJsonFile(argv.ne);
+    if (needs_extras) {
+        needs_extra_links = 'needs_extra_links' in needs_extras ? needs_extras.needs_extra_links.map(link => link.option) : null;
+        needs_extra_options = 'needs_extra_options' in needs_extras ? needs_extras.needs_extra_options : null;
+        needs_extra_version = 'version' in needs_extras ? needs_extras.version : null;
     }
-//  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
+    //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
 }
 
-needs=readFileJsonFile(filename);
-if(needs) {
-    network_init_data = read_needs.processJSON(needs,
+needs = readFileJsonFile(filename);
+if (needs) {
+    const np=new read_needs.NeedsParser();
+    network_init_data = np.processJSON(needs,
         argv.verbose,
-        _link_types=needs_extra_links,
-        _extra_options=needs_extra_options,
-        _version=needs_extra_version
+        _link_types = needs_extra_links,
+        _extra_options = needs_extra_options,
+        _version = needs_extra_version
     );
     if (argv.a && network_init_data['nodes'].length > 0) {
-        const data=network_init_data['nodes'][0].data;
-        for(const k of Object.keys(data).sort())
+        const data = network_init_data['nodes'][0].data;
+        for (const k of Object.keys(data).sort())
             console.log(`${k.padEnd(15, ' ')} -> ${truncateString(data[k], 60)}`);
     }
     else {
-        const timer = argv.dia?new read_needs.Timer():null;
-        if(timer)
+        const timer = argv.dia ? new read_needs.Timer() : null;
+        if (timer)
             timer.start();
-        main(network_init_data, filterExpression, executeFilter=argv.x, verbose=argv.verbose, traceParser=argv.trace, mpf=argv.mpf);
-        if(timer)
+        main(network_init_data, filterExpression, executeFilter = argv.x, verbose = argv.verbose, traceParser = argv.trace, mpf = argv.mpf);
+        if (timer)
             timer.stop('main()');
     }
 }

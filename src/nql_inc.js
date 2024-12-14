@@ -8,7 +8,7 @@ class Timer {
     }
     stop(msg) {
         const endTime = performance.now();
-        console.error(`Execution time of ${msg} ${((endTime - this.startTime)/1000).toFixed(3)} ms`);
+        console.error(`Execution time of ${msg} ${((endTime - this.startTime) / 1000).toFixed(3)} ms`);
     }
 }
 
@@ -458,117 +458,118 @@ function custom_filter(currentNode, expr) {
     return Node.create(expr).evaluate(currentNode);
 }
 
-let link_types = ['links'];
-
-function parse_links(need) {
-    links = [];
-    for (const link_type of link_types) {
-        if (link_type in need) {
-            links = links.concat(need[link_type]);
-        }
-    }
-    if (verbose)
-        console.log(links);
-    return links;
-}
-
-function convert_text_to_html(text) {
-    //Escape special characters to prevent XSS attacks
-    escaped_text = encodeURIComponent(text);
-    html_text = escaped_text.replace('\n', '<br>');
-    return html_text;
-}
-
-function processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null) {
-    if (_link_types)
-        link_types = ['links', ..._link_types];
-    verbose = _verbose;
-    let version = _version;
-    if (version) {
-        if (!(version in data['versions']))
-            return null;
-    } else {
-        if (Object.keys(data.versions).length > 0)
-            version = Object.keys(data.versions)[0];
-        else
-            return null;
-    }
-    needs = data['versions'][version]['needs']
-    let nodes = [];
-    let edges = [];
-    let children = {};
-    let parents = {};
-    let gnodes = {};
-    for (const key in needs) {
-        children[key] = [];
-        parents[key] = [];
-        if (verbose)
-            console.log(key, needs[key].docname);
-        var jsonData = {
-            'data': {
-                'docname': needs[key]['docname'],
-                'type': needs[key]['type'],
-                'title': needs[key]['title'],
-                'status': needs[key]['status'],
-                'id': needs[key]['id'],
-                'links': needs[key]['links'],
-                'description': needs[key]['description'],
-                "lineno": 'lineno' in needs[key] ? needs[key]['lineno'] : 1,
-                "tags": needs[key]['tags']
-            }
-        };
-        if (_extra_options) {
-            for (const e of _extra_options) {
-                if (e in needs[key])
-                    jsonData['data'][e] = needs[key][e]
+class NeedsParser {
+    link_types = ['links'];
+    parse_links(need) {
+        let links = [];
+        for (const link_type of this.link_types) {
+            if (link_type in need) {
+                links = links.concat(need[link_type]);
             }
         }
-        jsonData['shape'] = 'box'
-        jsonData['id'] = needs[key].id
-        needs[key]['index'] = nodes.length;
-        nodes.push(jsonData);
-    }
-    for (const key in needs) {
         if (verbose)
-            console.log(`id=${needs[key].id}`);
-        for (edge of parse_links(needs[key])) {
-            var jsonData = {};
-            edges.push({ 'from': needs[key].id, 'to': edge });
-        }
+            console.log(links);
+        return links;
     }
 
-    // add children and parents
-    for (const key in needs) {
-        const index = needs[key]['index'];
-        for (const link_type of link_types) {
-            const linktype_back = `${link_type}_back`
-            if (link_type in needs[key]) {
-                nodes[index]['data'][link_type] = needs[key][link_type];
-                for (to of needs[key][link_type]) {
-                    if (to in needs) {
-                        children[to].push(key);
-                        parents[key].push(to);
-                    }
+    convert_text_to_html(text) {
+        //Escape special characters to prevent XSS attacks
+        escaped_text = encodeURIComponent(text);
+        html_text = escaped_text.replace('\n', '<br>');
+        return html_text;
+    }
+
+    processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null) {
+        if (_link_types)
+            this.link_types = ['links', ..._link_types];
+        verbose = _verbose;
+        let version = _version;
+        if (version) {
+            if (!(version in data['versions']))
+                return null;
+        } else {
+            if (Object.keys(data.versions).length > 0)
+                version = Object.keys(data.versions)[0];
+            else
+                return null;
+        }
+        let needs = data['versions'][version]['needs'];
+        let nodes = [];
+        let edges = [];
+        let children = {};
+        let parents = {};
+        let gnodes = {};
+        for (const key in needs) {
+            children[key] = [];
+            parents[key] = [];
+            if (verbose)
+                console.log(key, needs[key].docname);
+            var jsonData = {
+                'data': {
+                    'docname': needs[key]['docname'],
+                    'type': needs[key]['type'],
+                    'title': needs[key]['title'],
+                    'status': needs[key]['status'],
+                    'id': needs[key]['id'],
+                    'links': needs[key]['links'],
+                    'description': needs[key]['description'],
+                    "lineno": 'lineno' in needs[key] ? needs[key]['lineno'] : 1,
+                    "tags": needs[key]['tags']
+                }
+            };
+            if (_extra_options) {
+                for (const e of _extra_options) {
+                    if (e in needs[key])
+                        jsonData['data'][e] = needs[key][e]
                 }
             }
-            if (linktype_back in needs[key])
-                nodes[index]['data'][linktype_back] = needs[key][linktype_back];
+            jsonData['shape'] = 'box'
+            jsonData['id'] = needs[key].id
+            needs[key]['index'] = nodes.length;
+            nodes.push(jsonData);
         }
-        nodes[index]['data']['incoming'] = children[key];
-        nodes[index]['data']['outgoing'] = parents[key];
-        gnodes[key] = nodes[index];
-    }
+        for (const key in needs) {
+            if (verbose)
+                console.log(`id=${needs[key].id}`);
+            for (const edge of this.parse_links(needs[key])) {
+                var jsonData = {};
+                edges.push({ 'from': needs[key].id, 'to': edge });
+            }
+        }
 
-    return {
-        data: data,
-        version: version,
-        gnodes: gnodes,
-        nodes: nodes,
-        edges: edges,
-        children: children,
-        parents: parents
+        // add children and parents
+        for (const key in needs) {
+            const index = needs[key]['index'];
+            for (const link_type of this.link_types) {
+                const linktype_back = `${link_type}_back`
+                if (link_type in needs[key]) {
+                    nodes[index]['data'][link_type] = needs[key][link_type];
+                    for (const to of needs[key][link_type]) {
+                        if (to in needs) {
+                            children[to].push(key);
+                            parents[key].push(to);
+                        }
+                    }
+                }
+                if (linktype_back in needs[key])
+                    nodes[index]['data'][linktype_back] = needs[key][linktype_back];
+            }
+            nodes[index]['data']['incoming'] = children[key];
+            nodes[index]['data']['outgoing'] = parents[key];
+            gnodes[key] = nodes[index];
+        }
+
+        return {
+            data: data,
+            version: version,
+            gnodes: gnodes,
+            nodes: nodes,
+            edges: edges,
+            children: children,
+            parents: parents
+        }
+            ;
     }
-        ;
 }
 
 function prettyJ(unordered) {
@@ -603,9 +604,9 @@ function prettyJ(unordered) {
 
 module.exports = {
     Timer,
+    NeedsParser,
     prepareParser,
     parse_input,
     custom_filter,
-    processJSON,
     prettyJ
 };
