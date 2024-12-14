@@ -153,6 +153,12 @@ if (argv.ne) {
         needs_extra_links = 'needs_extra_links' in needs_extras ? needs_extras.needs_extra_links.map(link => link.option) : null;
         needs_extra_options = 'needs_extra_options' in needs_extras ? needs_extras.needs_extra_options : null;
         needs_extra_version = 'version' in needs_extras ? needs_extras.version : null;
+        valid_linkage = 'valid-linkage' in needs_extras ? needs_extras['valid-linkage'] : null;
+        valid_linkage_ignore = 'valid-linkage-ignore' in needs_extras ? needs_extras['valid-linkage-ignore'] : null;
+        if (valid_linkage_ignore && needs_extra_links) {
+            for(const ignore of valid_linkage_ignore)
+                needs_extra_links = needs_extra_links.filter(e => e !== ignore);
+        }
     }
     //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
 }
@@ -168,6 +174,7 @@ if (needs) {
         _link_types = needs_extra_links,
         _extra_options = needs_extra_options,
         _version = needs_extra_version,
+        _valid_linkage = valid_linkage,
         _keep_input_data=true
     );
     needs=null;

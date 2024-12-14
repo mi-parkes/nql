@@ -18,7 +18,7 @@ class Timer {
 function memoryConsumption(msg) {
     // const memoryUsage = performance.memory;
     const memoryUsage = process.memoryUsage();
-    console.error(`Memory consumption of ${msg} ${Math.round((memoryUsage.heapUsed/ 1024 / 1024) * 100) / 100} MB`); 
+    console.error(`Memory consumption of ${msg} ${Math.round((memoryUsage.heapUsed/ 1024 / 1024) * 100) / 100} MB`);
 }
 
 function getType(att) {
@@ -489,6 +489,7 @@ class NeedsParser {
     }
 
     processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null,
+        _valid_linkage=null,
         _keep_input_data=true
     ) {
         if (_link_types)
@@ -525,7 +526,9 @@ class NeedsParser {
                     'links': needs[key]['links'],
                     'description': needs[key]['description'],
                     "lineno": 'lineno' in needs[key] ? needs[key]['lineno'] : 1,
-                    "tags": needs[key]['tags']
+                    "tags": needs[key]['tags'],
+                    "valid_ilinkage":'',
+                    "valid_olinkage":''
                 }
             };
             if (_extra_options) {
@@ -551,6 +554,9 @@ class NeedsParser {
         // add children and parents
         for (const key in needs) {
             const index = needs[key]['index'];
+            const itype=needs[key]['type'];
+            let once=false;
+            let valid=true;
             for (const link_type of this.link_types) {
                 const linktype_back = `${link_type}_back`
                 if (link_type in needs[key]) {
@@ -559,15 +565,53 @@ class NeedsParser {
                         if (to in needs) {
                             children[to].push(key);
                             parents[key].push(to);
+                            if(_valid_linkage) {
+                                const otype=needs[to]['type'];
+                                if ((itype in _valid_linkage) && (otype in _valid_linkage[itype])) {
+                                    const _valid=_valid_linkage[itype][otype]===link_type;
+                                    valid=valid && _valid;
+                                    once=true;
+                                }
+                            }
                         }
                     }
                 }
                 if (linktype_back in needs[key])
                     nodes[index]['data'][linktype_back] = needs[key][linktype_back];
             }
+            if(once)
+                nodes[index]['data']['valid_olinkage']=valid?'true':'false';
             nodes[index]['data']['incoming'] = children[key];
             nodes[index]['data']['outgoing'] = parents[key];
             gnodes[key] = nodes[index];
+        }
+
+        if(_valid_linkage) {
+            for (const key in needs) {
+                const index = needs[key]['index'];
+                const otype = needs[key]['type'];
+                let once=false;
+                let valid=true;
+                for(const child of children[key]) {
+                    const childData=gnodes[child]['data'];
+                    for (const link_type of this.link_types) {
+                        if (link_type in childData) {
+                            for (const to of childData[link_type]) {
+                                if(to===key) {
+                                    const itype=childData['type'];
+                                    if ((itype in _valid_linkage) && (otype in _valid_linkage[itype])) {
+                                        const _valid=_valid_linkage[itype][otype]===link_type;
+                                        valid=valid && _valid;
+                                        once=true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if(once)
+                    nodes[index]['data']['valid_ilinkage']=valid?'true':'false';
+            }
         }
 
         return {
