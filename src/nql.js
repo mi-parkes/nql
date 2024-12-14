@@ -26,7 +26,6 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
             const data = network_init_data['data']['versions'][network_init_data['version']];
             data['needs'] = out;
             data['needs_amount'] = counter;
-            //console.log(JSON.stringify({ counter: counter, needs: out }));
             console.log(JSON.stringify(network_init_data['data']));
         }
     } catch (error) {
@@ -161,7 +160,7 @@ if (argv.ne) {
 
 needs = readFileJsonFile(filename);
 if (needs) {
-    const np=new read_needs.NeedsParser();
+    const np = new read_needs.NeedsParser();
     network_init_data = np.processJSON(needs,
         argv.verbose,
         _link_types = needs_extra_links,
@@ -177,7 +176,12 @@ if (needs) {
         const timer = argv.dia ? new read_needs.Timer() : null;
         if (timer)
             timer.start();
-        main(network_init_data, filterExpression, executeFilter = argv.x, verbose = argv.verbose, traceParser = argv.trace, mpf = argv.mpf);
+        main(network_init_data,
+            filterExpression,
+            executeFilter = argv.x,
+            verbose = argv.verbose,
+            traceParser = argv.trace,
+            mpf = argv.mpf);
         if (timer)
             timer.stop('main()');
     }
