@@ -11,7 +11,7 @@ function coloredText(text, color) {
 function processInput(parser, config, filterExpression, executeFilter, mpf) {
     let ret = 0;
     try {
-        let AST=read_needs.parse_input(parser,config,filterExpression);
+        let AST = read_needs.parse_input(parser, config, filterExpression);
         let counter = 0;
         if (executeFilter) {
             let out = {};
@@ -23,7 +23,10 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
                         break;
                 }
             }
-            console.log(JSON.stringify({ counter: counter, needs: out }));
+            const data = network_init_data['data']['versions'][network_init_data['version']];
+            data['needs'] = out;
+            data['needs_amount'] = counter;
+            console.log(JSON.stringify(network_init_data['data']));
         }
     } catch (error) {
         console.log(`${coloredText(filterExpression, 'red')} -> ${error}`);
@@ -32,7 +35,7 @@ function processInput(parser, config, filterExpression, executeFilter, mpf) {
     return ret;
 }
 
-function main(network_init_data, filterExpression, executeFilter=true, verbose=false, traceParser=false, mpf=-1) {
+function main(network_init_data, filterExpression, executeFilter = true, verbose = false, traceParser = false, mpf = -1) {
     const parser = read_needs.prepareParser(traceParser);
     if (network_init_data && 'gnodes' in network_init_data) {
         const gnodes = network_init_data['gnodes'];
@@ -89,6 +92,12 @@ yargs(process.argv.slice(2))
         description: 'Process Sphinx-Needs data using the given input filter.',
         default: true
     })
+    .option('diagnostics', {
+        alias: 'dia',
+        type: 'boolean',
+        description: 'Performance Profiling',
+        default: true
+    })
     .option('needs-extras', {
         alias: 'ne',
         type: 'string',
@@ -121,9 +130,9 @@ const filterExpression = argv._[0];
 const filename = argv._[1];
 
 function readFileJsonFile(filename) {
-    let jsonData=null;
-    try  {
-        let data=fs.readFileSync(filename, 'utf8');
+    let jsonData = null;
+    try {
+        let data = fs.readFileSync(filename, 'utf8');
         jsonData = JSON.parse(data);
     }
     catch (error) {
@@ -133,32 +142,62 @@ function readFileJsonFile(filename) {
     return jsonData;
 }
 
-let needs;
-let needs_extras=null;
-let needs_extra_links=null;
-let needs_extra_options=null;
+let needs_extras = null;
+let needs_extra_links = null;
+let needs_extra_options = null;
+let needs_extra_version = null;
 
-if(argv.ne) {
-    needs_extras=readFileJsonFile(argv.ne);
-    if(needs_extras) {
-        needs_extra_links='needs_extra_links' in needs_extras ?  needs_extras.needs_extra_links.map(link => link.option):null;
-        needs_extra_options='needs_extra_options' in needs_extras ? needs_extras.needs_extra_options:null;
+if (argv.ne) {
+    needs_extras = readFileJsonFile(argv.ne);
+    if (needs_extras) {
+        needs_extra_links = 'needs_extra_links' in needs_extras ? needs_extras.needs_extra_links.map(link => link.option) : null;
+        needs_extra_options = 'needs_extra_options' in needs_extras ? needs_extras.needs_extra_options : null;
+        needs_extra_version = 'version' in needs_extras ? needs_extras.version : null;
+        valid_linkage = 'valid-linkage' in needs_extras ? needs_extras['valid-linkage'] : null;
+        valid_linkage_ignore = 'valid-linkage-ignore' in needs_extras ? needs_extras['valid-linkage-ignore'] : null;
+        if (valid_linkage_ignore && needs_extra_links) {
+            for(const ignore of valid_linkage_ignore)
+                needs_extra_links = needs_extra_links.filter(e => e !== ignore);
+        }
     }
-//  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
+    //  console.error(read_needs.prettyJ(needs_extra_options['needs_extra_options']));
 }
 
-needs=readFileJsonFile(filename);
-if(needs) {
-    network_init_data = read_needs.processJSON(needs,
+if(argv.dia)
+    read_needs.memoryConsumption('Before execution of readFileJsonFile():');
+
+let needs = readFileJsonFile(filename);
+if (needs) {
+    const np = new read_needs.NeedsParser();
+    network_init_data = np.processJSON(needs,
         argv.verbose,
-        _link_types=needs_extra_links,
-        _extra_options=needs_extra_options
+        _link_types = needs_extra_links,
+        _extra_options = needs_extra_options,
+        _version = needs_extra_version,
+        _valid_linkage = valid_linkage,
+        _keep_input_data=true
     );
+    needs=null;
     if (argv.a && network_init_data['nodes'].length > 0) {
-        const data=network_init_data['nodes'][0].data;
-        for(const k of Object.keys(data).sort())
+        const data = network_init_data['nodes'][0].data;
+        for (const k of Object.keys(data).sort())
             console.log(`${k.padEnd(15, ' ')} -> ${truncateString(data[k], 60)}`);
     }
-    else
-        main(network_init_data, filterExpression, executeFilter=argv.x, verbose=argv.verbose, traceParser=argv.trace, mpf=argv.mpf);
+    else {
+        const timer = argv.dia ? new read_needs.Timer() : null;
+        if (timer) {
+            timer.start();
+            read_needs.memoryConsumption('Before execution of main():');
+        }
+        main(network_init_data,
+            filterExpression,
+            executeFilter = argv.x,
+            verbose = argv.verbose,
+            traceParser = argv.trace,
+            mpf = argv.mpf);
+        if (timer) {
+            timer.stop('main()');
+            read_needs.memoryConsumption('After execution of main():');
+        }
+    }
 }
