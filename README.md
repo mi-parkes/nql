@@ -1,5 +1,5 @@
 # nql
-sphinx-**N**eeds **Q**uery **L**anguage
+sphinx-**N**eeds **Q**uery **L**anguage is a simple query language designed for filtering and search in sphinx_needs.json data.
 
 ## Installation
 
