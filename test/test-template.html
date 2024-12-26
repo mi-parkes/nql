@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+    <h1> Well done learning more about Webpack </h1>
+    <script type="text/javascript" src="../dist/nql.js"></script>
+    <script type="text/javascript" charset="UTF-8">
+
+        const queryString = window.location.search;
+        const urlSearchParams = new URLSearchParams(queryString);
+        const decodedData = Object.fromEntries(urlSearchParams.entries());
+
+        let verbose = true;
+        if(verbose) {
+            console.log('decodedData -->');
+            console.log(decodedData);
+        }
+
+        let urlToFetch = null;
+        let filterExpression = null;
+
+        const extra_options = {{ EXTRA_OPTIONS }};
+        const version={% if VERSION %}"{{ VERSION }}"{% else %}null{% endif %};
+        const valid_linkage_color = "{{VALID_LINKAGE_COLOR}}";
+        const invalid_linkage_color = "{{INVALID_LINKAGE_COLOR}}";
+        const type2color = {{ TYPE2COLOR }};
+        var filters = {{ FILTERS }};
+        const link_types = {{ LINK_TYPES }};
+        const valid_linkage = {{ VALID_LINKAGE }};
+
+        if ('filename' in decodedData && decodedData['filename'] != null)
+            urlToFetch = decodedData['filename']
+        if ('filter' in decodedData && decodedData['filter'] != null)
+            filterExpression = decodedData['filter']
+        if ('verbose' in decodedData && decodedData['verbose'] != null)
+            verbose = decodedData['verbose']
+
+        if (urlToFetch === null || filterExpression === null)
+            throw ("Invalid input");
+
+        let network_init_data;
+        const mpf = 5;
+
+        function truncateString(str, n) {
+            if (str.length > n)
+                return str.substring(0, n) + "...";
+            else
+                return str;
+        }
+
+        function processInput(parser, config, filterExpression, executeFilter) {
+            let ret = 0;
+            try {
+                let AST = nql.parse_input(parser, config, filterExpression);
+                let counter = 0;
+                if (executeFilter) {
+                    let out = {};
+                    for (const node of network_init_data['nodes']) {
+                        if (nql.custom_filter(node, AST)) {
+                            counter += 1;
+                            out[node.id] = node.data;
+                            if (mpf !== -1 && counter >= mpf)
+                                break;
+                        }
+                    }
+                    console.log(JSON.stringify({ counter: counter, needs: out }));
+                }
+            } catch (error) {
+                console.log(`${filterExpression} -> ${error}`);
+                ret = 1;
+            }
+            return ret;
+        }
+
+        let fetchRes = fetch(urlToFetch);
+        fetchRes.then(res =>
+            res.json()).then(data => {
+                console.log(`project=${data['project']}`);
+                const np = new nql.NeedsParser();
+                //network_init_data = nql.processJSON(data, verbose);
+                network_init_data = np.processJSON(data, verbose,
+                    link_types, 
+                    extra_options,
+                    version,
+                    valid_linkage,
+                   false
+                );
+                if (verbose)
+                    console.log(network_init_data);
+                const parser = nql.prepareParser();
+                if (network_init_data && 'gnodes' in network_init_data) {
+                    const gnodes = network_init_data['gnodes'];
+                    let keys = Object.keys(gnodes);
+                    if (keys.length > 0) {
+                        const firstKey = keys[0];
+                        const config = {
+                            verbose: verbose,
+                            sphinx_needs: gnodes[firstKey]
+                        };
+                        processInput(parser, config, filterExpression, true);
+                    }
+                }
+
+            }).catch(error => {
+                console.log(`Failed featching needs data:${urlToFetch} -> ${error}`);
+            });
+    </script>
+</body>
+
+</html>

@@ -24,5 +24,9 @@
     "ollama": "^0.5.11",
     "pegjs": "^0.10.0",
     "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
   }
 }

@@ -1,5 +1,4 @@
 const peg = require("pegjs");
-//import performance;
 
 let verbose = false;
 
@@ -211,12 +210,6 @@ Node.create = function (obj) {
         }
     }
     return field;
-}
-
-function filterOutKeys(obj, keysToRemove) {
-    return Object.fromEntries(
-        Object.entries(obj).filter(([key]) => !keysToRemove.includes(key))
-    );
 }
 
 function convert_text_to_html(text) {
@@ -488,7 +481,10 @@ class NeedsParser {
         return html_text;
     }
 
-    processJSON(data, _verbose = false, _link_types = null, _extra_options = null, _version = null,
+    processJSON(data, _verbose = false, 
+        _link_types = null, 
+        _extra_options = null,
+        _version = null,
         _valid_linkage=null,
         _keep_input_data=true
     ) {

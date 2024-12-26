@@ -171,11 +171,11 @@ if (needs) {
     const np = new read_needs.NeedsParser();
     network_init_data = np.processJSON(needs,
         argv.verbose,
-        _link_types = needs_extra_links,
-        _extra_options = needs_extra_options,
-        _version = needs_extra_version,
-        _valid_linkage = valid_linkage,
-        _keep_input_data=true
+        needs_extra_links,
+        needs_extra_options,
+        needs_extra_version,
+        valid_linkage,
+        true
     );
     needs=null;
     if (argv.a && network_init_data['nodes'].length > 0) {
