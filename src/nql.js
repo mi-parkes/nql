@@ -96,7 +96,7 @@ yargs(process.argv.slice(2))
         alias: 'dia',
         type: 'boolean',
         description: 'Performance Profiling',
-        default: true
+        default: false
     })
     .option('needs-extras', {
         alias: 'ne',
@@ -168,15 +168,16 @@ if(argv.dia)
 
 let needs = readFileJsonFile(filename);
 if (needs) {
-    const np = new read_needs.NeedsParser();
-    network_init_data = np.processJSON(needs,
-        argv.verbose,
-        needs_extra_links,
-        needs_extra_options,
-        needs_extra_version,
-        valid_linkage,
-        true
-    );
+    read_needs.setVerboseMode(argv.verbose);
+
+    const np = new read_needs.NeedsParser()
+                .setLinkTypes(needs_extra_links)
+                .setExtraOptions(needs_extra_options)
+                .setVersion(needs_extra_version)
+                .setValidLinkage(valid_linkage)
+                .setKeepInputData(true);
+
+    network_init_data = np.processJSON(needs);
     needs=null;
     if (argv.a && network_init_data['nodes'].length > 0) {
         const data = network_init_data['nodes'][0].data;

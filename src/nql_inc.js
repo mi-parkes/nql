@@ -2,6 +2,10 @@ const peg = require("pegjs");
 
 let verbose = false;
 
+function setVerboseMode(mode) {
+    verbose=mode;
+}
+
 class Timer {
     start() {
         this.startTime = performance.now();
@@ -462,16 +466,38 @@ function custom_filter(currentNode, expr) {
 
 class NeedsParser {
     link_types = ['links'];
-    parse_links(need) {
-        let links = [];
-        for (const link_type of this.link_types) {
-            if (link_type in need) {
-                links = links.concat(need[link_type]);
-            }
-        }
-        if (verbose)
-            console.log(links);
-        return links;
+    extra_options =null;
+    version = null;
+    valid_linkage=null;
+    keep_input_data=true;
+
+    constructor() {
+    }
+
+    setLinkTypes(link_types) {
+        if (link_types)
+            this.link_types = ['links', ...link_types];
+        return this;
+    }
+
+    setExtraOptions(extra_options) {
+        this.extra_options = extra_options;
+        return this;
+    }
+
+    setVersion(version) {
+        this.version = version;
+        return this;
+    }
+
+    setValidLinkage(version) {
+        this.valid_linkage = valid_linkage;
+        return this;
+    }
+
+    setKeepInputData(keep_input_data) {
+        this.keep_input_data = keep_input_data;
+        return this;
     }
 
     convert_text_to_html(text) {
@@ -481,17 +507,11 @@ class NeedsParser {
         return html_text;
     }
 
-    processJSON(data, _verbose = false, 
-        _link_types = null, 
-        _extra_options = null,
-        _version = null,
-        _valid_linkage=null,
-        _keep_input_data=true
-    ) {
-        if (_link_types)
-            this.link_types = ['links', ..._link_types];
-        verbose = _verbose;
-        let version = _version;
+    processJSON(data) {
+        // if (_link_types)
+        //     this.link_types = ['links', ..._link_types];
+        // verbose = _verbose;
+        let version = this.version;
         if (version) {
             if (!(version in data['versions']))
                 return null;
@@ -527,8 +547,8 @@ class NeedsParser {
                     "valid_olinkage":''
                 }
             };
-            if (_extra_options) {
-                for (const e of _extra_options) {
+            if (this.extra_options) {
+                for (const e of this.extra_options) {
                     if (e in needs[key])
                         jsonData['data'][e] = needs[key][e]
                 }
@@ -561,10 +581,10 @@ class NeedsParser {
                         if (to in needs) {
                             children[to].push(key);
                             parents[key].push(to);
-                            if(_valid_linkage) {
+                            if(this.valid_linkage) {
                                 const otype=needs[to]['type'];
-                                if ((itype in _valid_linkage) && (otype in _valid_linkage[itype])) {
-                                    const _valid=_valid_linkage[itype][otype]===link_type;
+                                if ((itype in this.valid_linkage) && (otype in this.valid_linkage[itype])) {
+                                    const _valid=this.valid_linkage[itype][otype]===link_type;
                                     valid=valid && _valid;
                                     once=true;
                                 }
@@ -582,7 +602,7 @@ class NeedsParser {
             gnodes[key] = nodes[index];
         }
 
-        if(_valid_linkage) {
+        if(this.valid_linkage) {
             for (const key in needs) {
                 const index = needs[key]['index'];
                 const otype = needs[key]['type'];
@@ -595,8 +615,8 @@ class NeedsParser {
                             for (const to of childData[link_type]) {
                                 if(to===key) {
                                     const itype=childData['type'];
-                                    if ((itype in _valid_linkage) && (otype in _valid_linkage[itype])) {
-                                        const _valid=_valid_linkage[itype][otype]===link_type;
+                                    if ((itype in this.valid_linkage) && (otype in this.valid_linkage[itype])) {
+                                        const _valid=this.valid_linkage[itype][otype]===link_type;
                                         valid=valid && _valid;
                                         once=true;
                                     }
@@ -611,7 +631,7 @@ class NeedsParser {
         }
 
         return {
-            data: _keep_input_data?data:null,
+            data: this.keep_input_data?data:null,
             version: version,
             gnodes: gnodes,
             nodes: nodes,
@@ -619,7 +639,17 @@ class NeedsParser {
             children: children,
             parents: parents
         }
-            ;
+    }
+    parse_links(need) {
+        let links = [];
+        for (const link_type of this.link_types) {
+            if (link_type in need) {
+                links = links.concat(need[link_type]);
+            }
+        }
+        if (verbose)
+            console.log(links);
+        return links;
     }
 }
 
@@ -660,5 +690,6 @@ module.exports = {
     prepareParser,
     parse_input,
     custom_filter,
-    prettyJ
+    prettyJ,
+    setVerboseMode
 };

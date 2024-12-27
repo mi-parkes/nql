@@ -82,15 +82,16 @@
         fetchRes.then(res =>
             res.json()).then(data => {
                 console.log(`project=${data['project']}`);
-                const np = new nql.NeedsParser();
-                //network_init_data = nql.processJSON(data, verbose);
-                network_init_data = np.processJSON(data, verbose,
-                    link_types, 
-                    extra_options,
-                    version,
-                    valid_linkage,
-                   false
-                );
+
+                nql.setVerboseMode(verbose);
+
+                const np = new nql.NeedsParser()
+                    .setLinkTypes(link_types)
+                    .setExtraOptions(extra_options)
+                    .setVersion(version)
+                    .setValidLinkage(valid_linkage);
+                network_init_data = np.processJSON(data);
+
                 if (verbose)
                     console.log(network_init_data);
                 const parser = nql.prepareParser();
