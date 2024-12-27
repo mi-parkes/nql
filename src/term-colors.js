@@ -40,5 +40,3 @@ const colours = {
 };
 
 module.exports = { colours }
-
-//export {  colours }

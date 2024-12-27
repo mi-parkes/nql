@@ -16,10 +16,7 @@ class Timer {
     }
 }
 
-// { totalJSHeapSize: number, usedJSHeapSize: number, jsHeapSizeLimit: number }
-
 function memoryConsumption(msg) {
-    // const memoryUsage = performance.memory;
     const memoryUsage = process.memoryUsage();
     console.error(`Memory consumption of ${msg} ${Math.round((memoryUsage.heapUsed/ 1024 / 1024) * 100) / 100} MB`);
 }
@@ -508,9 +505,6 @@ class NeedsParser {
     }
 
     processJSON(data) {
-        // if (_link_types)
-        //     this.link_types = ['links', ..._link_types];
-        // verbose = _verbose;
         let version = this.version;
         if (version) {
             if (!(version in data['versions']))
