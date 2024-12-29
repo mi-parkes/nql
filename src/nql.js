@@ -146,6 +146,8 @@ let needs_extras = null;
 let needs_extra_links = null;
 let needs_extra_options = null;
 let needs_extra_version = null;
+let valid_linkage = null;
+let valid_linkage_ignore = null;
 
 if (argv.ne) {
     needs_extras = readFileJsonFile(argv.ne);
