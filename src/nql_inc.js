@@ -487,7 +487,7 @@ class NeedsParser {
         return this;
     }
 
-    setValidLinkage(version) {
+    setValidLinkage(valid_linkage) {
         this.valid_linkage = valid_linkage;
         return this;
     }
